@@ -335,6 +335,34 @@ else()
   message(STATUS "Not building benchmarks, caffe2 or CUDA not available")
 endif()
 
+SET(ISL_CPP_H "${CMAKE_CURRENT_LIST_DIR}/isl_interface/include/isl/cpp.h")
+
+add_executable(generate_template_isl isl_interface/generate_template_isl.cc)
+
+find_program(CLANG_FORMAT_BIN clang-format PATHS ${CLANG_PREFIX}
+  PATH_SUFFIXES bin
+  NO_DEFAULT_PATH)
+
+SET(ISL_TEMPLATE_CPP_DIR
+  "${CMAKE_CURRENT_BINARY_DIR}/isl_interface/include/isl")
+SET(ISL_TEMPLATE_CPP_H "${ISL_TEMPLATE_CPP_DIR}/template_cpp.h")
+add_custom_command(
+  OUTPUT ${ISL_TEMPLATE_CPP_H}
+  DEPENDS ${ISL_CPP_H}
+  DEPENDS generate_template_isl
+  COMMAND mkdir -p ${ISL_TEMPLATE_CPP_DIR}
+  COMMAND generate_template_isl < ${ISL_CPP_H} > ${ISL_TEMPLATE_CPP_H}
+  COMMAND ${CLANG_FORMAT_BIN} -i ${ISL_TEMPLATE_CPP_H}
+)
+
 if (WITH_BINDINGS)
   add_subdirectory(isl_interface)
+
+  # generate_isl_cpp_h is the dependency that should be used
+  # by code that depends on the isl C++ bindings.
+  add_custom_target(generate_isl_cpp_h
+    DEPENDS ${ISL_CPP_H} ${ISL_TEMPLATE_CPP_H})
+else()
+  add_custom_target(generate_isl_cpp_h
+    DEPENDS ${ISL_TEMPLATE_CPP_H})
 endif()

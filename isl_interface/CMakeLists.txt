@@ -86,7 +86,6 @@ target_link_libraries(extract_isl_interface
 # Dummy library to ensure that C++ bindings depend on contents of header files.
 add_library(isl_all_h_dep STATIC ${ISL_DIR}/all.c)
 
-SET(ISL_CPP_H "${CMAKE_CURRENT_LIST_DIR}/include/isl/cpp.h")
 add_custom_command(
   OUTPUT ${ISL_CPP_H}
   DEPENDS isl_all_h_dep
@@ -106,23 +105,3 @@ add_custom_command(
   COMMAND cat ${ISL_DIR}/cpp/cpp.h.bot >> ${ISL_CPP_H} || exit 1
   DEPENDS extract_isl_interface
 )
-
-add_executable(generate_template_isl generate_template_isl.cc)
-
-find_program(CLANG_FORMAT_BIN clang-format PATHS ${CLANG_PREFIX}
-  PATH_SUFFIXES bin
-  NO_DEFAULT_PATH)
-
-SET(ISL_TEMPLATE_CPP_H "${CMAKE_CURRENT_BINARY_DIR}/include/isl/template_cpp.h")
-add_custom_command(
-  OUTPUT ${ISL_TEMPLATE_CPP_H}
-  DEPENDS ${ISL_CPP_H}
-  DEPENDS generate_template_isl
-  COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/include/isl
-  COMMAND generate_template_isl < ${ISL_CPP_H} > ${ISL_TEMPLATE_CPP_H}
-  COMMAND ${CLANG_FORMAT_BIN} -i ${ISL_TEMPLATE_CPP_H}
-)
-
-# generate_isl_cpp_h is the dependency that should be used
-# by code that depends on the isl C++ bindings.
-add_custom_target(generate_isl_cpp_h DEPENDS ${ISL_CPP_H} ${ISL_TEMPLATE_CPP_H})
